@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import { Readable } from 'stream';
 
 export interface PdfServiceOptions {
   markdown: string;
@@ -14,10 +15,19 @@ export interface PdfServiceOptions {
 export async function convertMarkdownToPdf({ markdown, fileUrl }: PdfServiceOptions): Promise<Buffer> {
   let mdContent = markdown;
   if (fileUrl) {
-    // Fetch file content from URL
+    // Stream download for large files
     const res = await fetch(fileUrl);
     if (!res.ok) throw new Error('Failed to fetch Markdown file');
-    mdContent = await res.text();
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('No body in fetch response');
+    const chunks: Uint8Array[] = [];
+    let done = false;
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      if (value) chunks.push(value);
+      done = readerDone;
+    }
+    mdContent = Buffer.concat(chunks).toString('utf-8');
   }
   // Dynamically import marked for SSR safety
   const { marked } = await import('marked');
@@ -40,6 +50,5 @@ export async function convertMarkdownToPdf({ markdown, fileUrl }: PdfServiceOpti
     // Ensure return type is Buffer for compatibility
     return Buffer.from(pdfBuffer);
   } finally {
-    await browser.close();
-  }
+    await browser.close();  }
 }

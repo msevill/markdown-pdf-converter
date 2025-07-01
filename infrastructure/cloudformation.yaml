@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Markdown-to-PDF Job API Infrastructure
+Resources:
+  # SQS Queue
+  JobQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: markdown-pdf-job-queue
+
+  # S3 Bucket
+  PdfBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: markdown-pdf-outputs
+
+  # PostgreSQL (RDS) - Placeholder
+  # Add your RDS resource here
+
+  # Lambda Function
+  JobProcessorLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: markdown-pdf-job-processor
+      Handler: dist/lambda/jobProcessor.handler
+      Role: arn:aws:iam::123456789012:role/lambda-execution-role
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !Ref JobQueue
+          S3_BUCKET: !Ref PdfBucket
+      Code:
+        S3Bucket: your-deployment-bucket
+        S3Key: lambda/jobProcessor.zip
+
+  # API Gateway, IAM roles, etc. - Add as needed

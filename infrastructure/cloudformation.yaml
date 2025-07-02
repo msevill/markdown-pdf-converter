@@ -32,4 +32,70 @@ Resources:
         S3Bucket: your-deployment-bucket
         S3Key: lambda/jobProcessor.zip
 
-  # API Gateway, IAM roles, etc. - Add as needed
+  # API Gateway for Express API
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: MarkdownPdfApi
+      Description: API Gateway for Markdown-to-PDF job endpoints
+
+  ApiRootResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - ApiGateway
+          - RootResourceId
+      PathPart: jobs
+      RestApiId: !Ref ApiGateway
+
+  ApiConvertResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref ApiRootResource
+      PathPart: convert
+      RestApiId: !Ref ApiGateway
+
+  ApiJobsMethodPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref ApiRootResource
+      RestApiId: !Ref ApiGateway
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - { LambdaArn: { 'Fn::GetAtt': ['JobProcessorLambda', 'Arn'] } }
+
+  ApiJobsIdMethodGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      ResourceId: !Ref ApiRootResource
+      RestApiId: !Ref ApiGateway
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - { LambdaArn: { 'Fn::GetAtt': ['JobProcessorLambda', 'Arn'] } }
+
+  ApiConvertMethodPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref ApiConvertResource
+      RestApiId: !Ref ApiGateway
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - { LambdaArn: { 'Fn::GetAtt': ['JobProcessorLambda', 'Arn'] } }
+
+  # IAM roles, etc. - Add as needed

@@ -1,0 +1,94 @@
+openapi: 3.0.3
+info:
+  title: Markdown PDF Job API
+  version: 1.0.0
+  description: API for submitting Markdown-to-PDF jobs, querying status, and on-demand conversion.
+servers:
+  - url: https://your-api-gateway-url
+paths:
+  /jobs:
+    post:
+      summary: Submit a Markdown-to-PDF job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                markdown:
+                  type: string
+                  description: Markdown content
+                fileUrl:
+                  type: string
+                  format: uri
+                  description: URL to a Markdown file
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [PENDING]
+        '400':
+          description: Invalid input
+  /jobs/{id}:
+    get:
+      summary: Get job status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                  url:
+                    type: string
+                    format: uri
+                  error:
+                    type: string
+        '404':
+          description: Job not found
+  /jobs/convert:
+    post:
+      summary: On-demand Markdown-to-PDF conversion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                markdown:
+                  type: string
+                  description: Markdown content
+                fileUrl:
+                  type: string
+                  format: uri
+                  description: URL to a Markdown file
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid input
